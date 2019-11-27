@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
   benchmark_floor = measure_calibrate();
-  printf("Measuring over %zd iterations\n", iterations);
+  printf("Measuring best of %zd iterations\n", iterations);
   BENCHMARK(ghash);
   BENCHMARK(aes_gcm_slow);
   BENCHMARK(aes_gcm_fast);
