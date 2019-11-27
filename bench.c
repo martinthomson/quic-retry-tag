@@ -110,8 +110,8 @@ MEASURE(calibrate) {}
 #include "blapi.h"
 #include "blapit.h"
 #define NSS_X86_OR_X64 1
-#include "gcm.h"
 #include "ctr.h"
+#include "gcm.h"
 #include "pkcs11t.h"
 #include "rijndael.h"
 #include <assert.h>
@@ -124,17 +124,16 @@ MEASURE(calibrate) {}
     }                                                                          \
   } while (0)
 
-    static const uint8_t retry_key[16] = {0xf5, 0xed, 0x46, 0x42, 0xe0, 0xe4,
-                                          0xc8, 0xd8, 0x78, 0xbb, 0xbc, 0x8a,
-                                          0x82, 0x88, 0x21, 0xc9};
-  static const uint8_t gcm_H[16] = {0xe6, 0xad, 0x60, 0x0d, 0xdb, 0xbc,
-                                    0xb2, 0x68, 0xc3, 0x32, 0x00, 0x49,
-                                    0x99, 0x69, 0xa9, 0xad};
-    static const uint8_t tag_mask[16] = {
+static const uint8_t retry_key[16] = {0xf5, 0xed, 0x46, 0x42, 0xe0, 0xe4,
+                                      0xc8, 0xd8, 0x78, 0xbb, 0xbc, 0x8a,
+                                      0x82, 0x88, 0x21, 0xc9};
+static const uint8_t gcm_H[16] = {0xe6, 0xad, 0x60, 0x0d, 0xdb, 0xbc,
+                                  0xb2, 0x68, 0xc3, 0x32, 0x00, 0x49,
+                                  0x99, 0x69, 0xa9, 0xad};
+static const uint8_t tag_mask[16] = {
 
-        0xea, 0x19, 0x0a, 0x5d, 0x49, 0xbb, 0x5f, 0x80,
-        0x9d, 0xc8, 0x12, 0x2f, 0x80, 0xb0, 0xe3, 0x25};
-
+    0xea, 0x19, 0x0a, 0x5d, 0x49, 0xbb, 0x5f, 0x80,
+    0x9d, 0xc8, 0x12, 0x2f, 0x80, 0xb0, 0xe3, 0x25};
 
 MEASURE(ghash) {
   uint8_t scratch[128];
@@ -229,7 +228,6 @@ MEASURE(aes_gcm_slow) {
   }
 }
 
-
 MEASURE(aes_gcm_fast) {
   uint8_t scratch[128];
   static const uint8_t gcm_H[16] = {0xe6, 0xad, 0x60, 0x0d, 0xdb, 0xbc,
@@ -240,15 +238,13 @@ MEASURE(aes_gcm_fast) {
   SUCCESS(gcmHash_InitContext(&ghash_cx, gcm_H, false));
 
   // This does too much, but we'll amortise this cost.
-  // It's really hard to initialize an AES key here so we let NSS do that for us.
-  CK_AES_CTR_PARAMS ctr_params = {
-    .ulCounterBits = 32,
-    .cb = {0}
-  };
+  // It's really hard to initialize an AES key here so we let NSS do that for
+  // us.
+  CK_AES_CTR_PARAMS ctr_params = {.ulCounterBits = 32, .cb = {0}};
   AESContext aes_cx;
   SUCCESS(AES_InitContext(&aes_cx, retry_key, sizeof(retry_key),
-                            (const uint8_t *)&ctr_params, NSS_AES_CTR, 1,
-                            AES_BLOCK_SIZE));
+                          (const uint8_t *)&ctr_params, NSS_AES_CTR, 1,
+                          AES_BLOCK_SIZE));
 
   // Borrow the CTR context for the duration of the test.
   CTRContext ctr_cx;
@@ -279,11 +275,13 @@ MEASURE(aes_gcm_fast) {
     ctr_cx.bufPtr = AES_BLOCK_SIZE;
 
     unsigned int out_len = 0;
-    SUCCESS(CTR_Update(&ctr_cx, scratch + header_len, &out_len, token_len, token, token_len, AES_BLOCK_SIZE));
+    SUCCESS(CTR_Update(&ctr_cx, scratch + header_len, &out_len, token_len,
+                       token, token_len, AES_BLOCK_SIZE));
 
     SUCCESS(gcmHash_Reset(&ghash_cx, header, header_len));
     SUCCESS(gcmHash_Update(&ghash_cx, scratch + header_len, token_len));
-    SUCCESS(gcmHash_Final(&ghash_cx, scratch + header_len + token_len, &out_len, 16));
+    SUCCESS(gcmHash_Final(&ghash_cx, scratch + header_len + token_len, &out_len,
+                          16));
 
     for (size_t j = 0; j < 16; ++j) {
       scratch[header_len + j] ^= tag_mask[j];
@@ -292,7 +290,6 @@ MEASURE(aes_gcm_fast) {
 
   AES_DestroyContext(&aes_cx, false);
 }
-
 
 void usage(const char *n) {
   fprintf(stderr, "Usage: %s [#iterations=%zd]\n", n, iterations);
